@@ -1,37 +1,36 @@
 require './spec_helper'
 
-### Custom SQL that gets executed in this test.
-# This method should return the correct SQL string.
-# PLEASE EDIT THE SQL IN THIS METHOD. ONLY EDIT THIS METHOD
-def books_not_sorted_to_libraries_sql
-  "SELECT b.title, l.name FROM books b
-  LEFT JOIN libraries l
-  ON b.library_id = l.id
-  ORDER BY b.title;"
-end
+describe Book do
+  subject!(:book) { FactoryGirl.create :book }
 
-# Executes your custom_sql. DO NOT EDIT
-def books_not_sorted_to_libraries
-  ActiveRecord::Base.connection.exec_query(books_not_sorted_to_libraries_sql).collect &:values
-end
+  describe '#available?' do
 
-describe 'Custom SQL Method: #books_not_sorted_to_libraries' do
+    context "without any lendings" do
+      it "should be considered available" do
+        book.available?.should be_true
+      end
+    end
 
-	let!(:library) { FactoryGirl.create :library, name: 'Library' }
+    context "currently checked out" do
 
-  let!(:a) { FactoryGirl.create :book, library: library, title: 'A' }
-  let!(:b) { FactoryGirl.create :book, library: nil, title: 'B' } 
-  let!(:c) { FactoryGirl.create :book, library: library, title: 'C' }
-  let!(:d) { FactoryGirl.create :book, library: nil, title: 'D' }
-  let!(:e) { FactoryGirl.create :book, library: library, title: 'E' }
+      let!(:lend) { FactoryGirl.create :current_lend, book: book, library: book.library }
 
-	it "returns all book titles, and the library name for all books (whether they have been sorted to a library or not)" do
-		books_not_sorted_to_libraries.should == [
-			['A', 'Library'],
-			['B', nil],
-			['C', 'Library'],
-			['D', nil],
-			['E', 'Library']
-		]
-	end
+      it "considered unavailable if currently checked out" do
+        book.available?.should be_false
+      end
+
+		end
+
+		context "is overdue" do
+
+			let!(:overdue) { FactoryGirl.create :unreturned_lend, book: book, library: book.library }
+
+      it "considered unavailable if overdue" do
+        book.available?.should be_false
+      end
+
+    end
+
+  end
+
 end

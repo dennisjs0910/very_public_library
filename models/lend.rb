@@ -59,7 +59,8 @@ before_create :valid_extensions
 
   def library_revenue
     if checkin
-      library.revenue = (self.checkin - self.due) * self.library.late_fee + library.revenue
+      library.revenue = fees
+      library.save
     end
   end
 
